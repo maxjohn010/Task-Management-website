@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Management</title>
+    <link rel="icon" href="logo.PNG" type="image">
+    <style>
+	* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #74ebd5, #acb6e5);
+    min-height: 100vh;
+    padding: 2vw;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.task-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 800px;
+    margin: 2vh auto;
+}
+
+h2 {
+    font-size: clamp(1.5rem, 5vw, 2rem);
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.task-input-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+#taskInput, #taskCategory {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: clamp(0.9rem, 3vw, 1rem);
+    flex: 1;
+    min-width: 150px;
+}
+
+#taskInput {
+    flex-grow: 2;
+}
+
+#taskCategory {
+    min-width: 120px;
+}
+
+button {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: clamp(0.9rem, 3vw, 1rem);
+    transition: background 0.3s;
+}
+
+button:hover {
+    background: #218838;
+}
+
+.task-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    background: #f8f9fa;
+    border-radius: 5px;
+    font-size: clamp(0.9rem, 3vw, 1rem);
+    transition: transform 0.2s;
+}
+
+.task-item.completed {
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+.task-item div {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.task-item button {
+    padding: 0.5rem;
+    font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+}
+
+.task-item button:nth-child(1) {
+    background: #007bff;
+}
+
+.task-item button:nth-child(1):hover {
+    background: #0056b3;
+}
+
+.task-item button:nth-child(2) {
+    background: #ffc107;
+}
+
+.task-item button:nth-child(2):hover {
+    background: #e0a800;
+}
+
+.task-item button:nth-child(3) {
+    background: #dc3545;
+}
+
+.task-item button:nth-child(3):hover {
+    background: #c82333;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .task-container {
+        padding: 1rem;
+    }
+
+    .task-input-wrapper {
+        flex-direction: column;
+    }
+
+    #taskInput, #taskCategory, button {
+        width: 100%;
+    }
+
+    .task-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .task-item div {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+@media (min-width: 601px) and (max-width: 900px) {
+    .task-container {
+        max-width: 90%;
+    }
+
+    .task-input-wrapper {
+        flex-wrap: nowrap;
+    }
+}
+
+@media (min-width: 1200px) {
+    .task-container {
+        padding: 3rem;
+    }
+}
+	</style>
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/Draggable.min.js"></script>
+</head>
+<body>
+    <!-- Task Management -->
+    <div class="task-container">
+        <h2>Task Management</h2>
+        <div class="task-input-wrapper">
+            <input type="text" id="taskInput" placeholder="Add a new task...">
+            <select id="taskCategory">
+                <option value="Work">Work</option>
+                <option value="Personal">Personal</option>
+                <option value="Urgent">Urgent</option>
+            </select>
+            <button onclick="addTask()">Add Task</button>
+        </div>
+        <ul id="taskList"></ul>
+    </div>
+
+    <script>
+	// DOM Elements
+const taskInput = document.getElementById('taskInput');
+const taskCategory = document.getElementById('taskCategory');
+const taskList = document.getElementById('taskList');
+
+// GSAP Animations
+function animateTasks() {
+    gsap.from('.task-item', {
+        opacity: 0,
+        x: -50,
+        stagger: 0.2,
+        duration: 0.5,
+        ease: 'power2.out'
+    });
+}
+
+// Task Management
+let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+function addTask() {
+    const taskText = taskInput.value.trim();
+    const category = taskCategory.value;
+    if (taskText) {
+        const task = { id: Date.now(), text: taskText, category, completed: false };
+        tasks.push(task);
+        saveTasks();
+        renderTasks();
+        taskInput.value = '';
+    }
+}
+
+function editTask(id) {
+    const newText = prompt('Edit task:', tasks.find(t => t.id === id).text);
+    if (newText) {
+        tasks = tasks.map(t => t.id === id ? { ...t, text: newText } : t);
+        saveTasks();
+        renderTasks();
+    }
+}
+
+function deleteTask(id) {
+    tasks = tasks.filter(t => t.id !== id);
+    saveTasks();
+    renderTasks();
+}
+
+function toggleTask(id) {
+    tasks = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+    saveTasks();
+    renderTasks();
+}
+
+function saveTasks() {
+    try {
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+    } catch (e) {
+        console.error('Error saving tasks:', e);
+    }
+}
+
+function renderTasks() {
+    taskList.innerHTML = '';
+    tasks.forEach(task => {
+        const li = document.createElement('li');
+        li.className = `task-item ${task.completed ? 'completed' : ''}`;
+        li.draggable = true;
+        li.innerHTML = `
+            <span>${task.text} (${task.category})</span>
+            <div>
+                <button onclick="toggleTask(${task.id})">${task.completed ? 'Undo' : 'Done'}</button>
+                <button onclick="editTask(${task.id})">Edit</button>
+                <button onclick="deleteTask(${task.id})">Delete</button>
+            </div>
+        `;
+        taskList.appendChild(li);
+    });
+    animateTasks();
+    makeTasksDraggable();
+}
+
+// Drag-and-Drop
+function makeTasksDraggable() {
+    Draggable.create('.task-item', {
+        bounds: taskList,
+        onDragEnd: function () {
+            const newIndex = Array.from(taskList.children).indexOf(this.target);
+            const taskId = Number(this.target.querySelector('button').getAttribute('onclick').match(/\d+/)[0]);
+            const task = tasks.find(t => t.id === taskId);
+            tasks.splice(tasks.indexOf(task), 1);
+            tasks.splice(newIndex, 0, task);
+            saveTasks();
+            renderTasks();
+        }
+    });
+}
+
+// Initialize
+renderTasks();
+	</script>
+</body>
+</html>
